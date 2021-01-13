@@ -2,7 +2,7 @@
 *
     Name: 京喜财富岛
     Address: 京喜App ====>>>> 全民赚大钱
-    Update: 2021/1/8 9:30
+    Update: 2021/1/13 10:30
     Thanks:
       whyour大佬
       TG: https://t.me/joinchat/O1WgnBbM18YjQQVFQ_D86w
@@ -40,11 +40,34 @@
     BoxJS订阅
     https://raw.githubusercontent.com/whyour/hundun/master/quanx/whyour.boxjs.json
 
-    Docker通知推送：
-    ################################## 京喜财富岛是否静默运行 ##################################
-    ## 默认为 "false"，静默，不发送推送通知消息，如想收到通知，请修改为 "true"
-    ## 如果你不想完全关闭或者完全开启通知，只想在特定的时间发送通知，可以参考上面面的“定义东东萌宠是否静默运行”部分，设定几个if判断条件
-    export CFD_NOTIFY_CONTROL=""
+    Docker：
+      1.上传jx_cfd.js文件到scripts文件夹下
+
+      2.修改以下三个参数
+
+      ################################## 是否添加DIY脚本（选填） ##################################
+      ## 如果你自己会写shell脚本，并且希望在每次git_pull.sh这个脚本运行时，额外运行你的DIY脚本，请赋值为 "true"
+      ## 同时，请务必将你的脚本命名为 diy.sh (只能叫这个文件名)，放在 config 目录下
+      ## 我已定义好的变量，你如果想直接使用，可以参考本仓库下 git_pull.sh 文件
+      EnableExtraShell="true"
+
+      ################################## 定义京喜农场TOKEN（选填） ##################################
+      ## 如果某个Cookie的账号种植的是app种子，则必须填入有效的TOKEN；而种植非app种子则不需要TOKEN
+      ## TOKEN的形式：{"farm_jstoken":"749a90f871adsfads8ffda7bf3b1576760","timestamp":"1610165423873","phoneid":"42c7e3dadfadsfdsaac-18f0e4f4a0cf"}
+      ## 因TOKEN中带有双引号，因此，变量值两侧必须由一对单引号引起来
+      ## TOKEN如何获取请阅读以下文件的注释：https://github.com/lxk0301/jd_scripts/blob/master/jd_jxnc.js
+      TokenJxnc1='{"farm_jstoken":"xxx","phoneid":"xxx","timestamp":"xxx"}'
+      TokenJxnc2=''
+      TokenJxnc3=''
+      TokenJxnc4=''
+      TokenJxnc5=''
+      TokenJxnc6=''
+
+      Docker通知推送：
+      ################################## 京喜财富岛是否静默运行 ##################################
+      ## 默认为 "false"，静默，不发送推送通知消息，如想收到通知，请修改为 "true"
+      ## 如果你不想完全关闭或者完全开启通知，只想在特定的时间发送通知，可以参考上面面的“定义东东萌宠是否静默运行”部分，设定几个if判断条件
+      export CFD_NOTIFY_CONTROL=""
 *
 **/
 
@@ -52,21 +75,23 @@ const $ = new Env("京喜财富岛");
 const JD_API_HOST = "https://m.jingxi.com/";
 const notify = $.isNode() ? require('./sendNotify') : '';
 const jdCookieNode = $.isNode() ? require("./jdCookie.js") : "";
-$.tokens = [$.getdata('jxnc_token1') || '{}', $.getdata('jxnc_token2') || '{}'];
+const jdTokenNode = $.isNode() ? require('./jdJxncTokens.js') : '';
 $.showLog = $.getdata("cfd_showLog") ? $.getdata("cfd_showLog") === "true" : false;
 $.notifyTime = $.getdata("cfd_notifyTime");
 $.result = [];
 $.cookieArr = [];
 $.currentCookie = '';
+$.tokenArr = [];
 $.currentToken = {};
 $.allTask = [];
 $.info = {};
 
 !(async () => {
   if (!getCookies()) return;
+  if (!getTokens()) return;
   for (let i = 0; i < $.cookieArr.length; i++) {
     $.currentCookie = $.cookieArr[i];
-    $.currentToken = JSON.parse($.tokens[i] || '{}');
+    $.currentToken = $.tokenArr[i];
     if ($.currentCookie) {
       $.userName = decodeURIComponent($.currentCookie.match(/pt_pin=(.+?);/) && $.currentCookie.match(/pt_pin=(.+?);/)[1]);
       $.index = i + 1;
@@ -823,6 +848,24 @@ function getCookies() {
       "【⏰提示】请先获取京东账号一cookie\n直接使用NobyDa的京东签到获取",
       "https://bean.m.jd.com/",
       { "open-url": "https://bean.m.jd.com/", }
+    );
+    return false;
+  }
+  return true;
+}
+
+function getTokens() {
+  if ($.isNode()) {
+    Object.keys(jdTokenNode).forEach((item) => {
+      $.tokenArr.push(jdTokenNode[item] ? JSON.parse(jdTokenNode[item]) : tokenNull);
+    })
+  } else {
+    $.tokenArr = [$.getdata('jxnc_token1') || '{}', $.getdata('jxnc_token2') || '{}'];
+  }
+  if (!$.tokenArr[0]) {
+    $.msg(
+      $.name,
+      "【⏰提示】请先获取京喜Token\n获取方式见脚本说明"
     );
     return false;
   }
